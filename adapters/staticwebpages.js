@@ -6,6 +6,8 @@
  * https://github.com/Azzaare/StaticWebPages.jl
  */
 
+import { sanitizeJulia, isValidPort, sanitizePath } from "./_security.js";
+
 export const name = "StaticWebPages.jl";
 export const language = "Julia";
 export const description = "Academic and personal website generator in Julia";
@@ -65,7 +67,8 @@ export const tools = [
       },
     },
     execute: async ({ path }) => {
-      return await runJulia(`using StaticWebPages; init("${path || "."}")`, path);
+      const safePath = sanitizePath(path) || ".";
+      return await runJulia(`using StaticWebPages; init("${sanitizeJulia(safePath)}")`, safePath);
     },
   },
   {
@@ -78,7 +81,8 @@ export const tools = [
       },
     },
     execute: async ({ path }) => {
-      return await runJulia(`using StaticWebPages; build()`, path);
+      const safePath = sanitizePath(path);
+      return await runJulia(`using StaticWebPages; build()`, safePath);
     },
   },
   {
@@ -92,8 +96,9 @@ export const tools = [
       },
     },
     execute: async ({ path, port }) => {
-      const p = port || 8000;
-      return await runJulia(`using StaticWebPages; serve(port=${p})`, path);
+      const safePath = sanitizePath(path);
+      const p = port && isValidPort(port) ? port : 8000;
+      return await runJulia(`using StaticWebPages; serve(port=${p})`, safePath);
     },
   },
   {

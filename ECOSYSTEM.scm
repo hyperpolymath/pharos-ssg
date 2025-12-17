@@ -1,12 +1,12 @@
 ;; SPDX-License-Identifier: AGPL-3.0-or-later
 ;; SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell
-;; ECOSYSTEM.scm — template-repo
+;; ECOSYSTEM.scm — pharos-ssg
 
 (ecosystem
   (version "1.0.0")
-  (name "template-repo")
+  (name "pharos-ssg")
   (type "project")
-  (purpose "Project in the hyperpolymath ecosystem")
+  (purpose "Satellite SSG implementation integrating with poly-ssg-mcp hub")
 
   (position-in-ecosystem
     "Part of hyperpolymath ecosystem. Follows RSR guidelines.")
