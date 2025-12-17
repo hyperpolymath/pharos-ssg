@@ -6,6 +6,8 @@
  * https://franklinjl.org/
  */
 
+import { sanitizeJulia, isValidPort, sanitizePath } from "./_security.js";
+
 export const name = "Franklin.jl";
 export const language = "Julia";
 export const description = "Static site generator for technical blogging in Julia with LaTeX support";
@@ -66,8 +68,9 @@ export const tools = [
       },
     },
     execute: async ({ path, template }) => {
-      const tmpl = template ? `; template="${template}"` : "";
-      return await runJulia(`using Franklin; newsite("${path || "."}"${tmpl})`);
+      const safePath = sanitizePath(path) || ".";
+      const tmpl = template ? `; template="${sanitizeJulia(template)}"` : "";
+      return await runJulia(`using Franklin; newsite("${sanitizeJulia(safePath)}"${tmpl})`);
     },
   },
   {
@@ -82,10 +85,12 @@ export const tools = [
       },
     },
     execute: async ({ path, port, host }) => {
-      let args = "";
-      if (port) args += `port=${port}, `;
-      if (host) args += `host="${host}", `;
-      return await runJulia(`using Franklin; serve(${args.slice(0, -2)})`, path);
+      const safePath = sanitizePath(path);
+      let args = [];
+      if (port && isValidPort(port)) args.push(`port=${port}`);
+      if (host) args.push(`host="${sanitizeJulia(host)}"`);
+      const argsStr = args.length ? args.join(", ") : "";
+      return await runJulia(`using Franklin; serve(${argsStr})`, safePath);
     },
   },
   {
@@ -100,11 +105,12 @@ export const tools = [
       },
     },
     execute: async ({ path, minify, prerender }) => {
+      const safePath = sanitizePath(path);
       let args = [];
       if (minify !== false) args.push("minify=true");
       if (prerender !== false) args.push("prerender=true");
       const argsStr = args.length ? args.join(", ") : "";
-      return await runJulia(`using Franklin; optimize(${argsStr})`, path);
+      return await runJulia(`using Franklin; optimize(${argsStr})`, safePath);
     },
   },
   {
@@ -117,7 +123,8 @@ export const tools = [
       },
     },
     execute: async ({ path }) => {
-      return await runJulia(`using Franklin; publish()`, path);
+      const safePath = sanitizePath(path);
+      return await runJulia(`using Franklin; publish()`, safePath);
     },
   },
   {

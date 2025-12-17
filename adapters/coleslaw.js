@@ -6,6 +6,8 @@
  * https://github.com/kingcons/coleslaw
  */
 
+import { sanitizeLisp, isValidPort, sanitizePath } from "./_security.js";
+
 export const name = "Coleslaw";
 export const language = "Common Lisp";
 export const description = "Flexible static blog/site generator written in Common Lisp";
@@ -82,7 +84,8 @@ export const tools = [
       },
     },
     execute: async ({ path }) => {
-      return await runColeslaw(`(coleslaw:setup "${path || "."}")`, path);
+      const safePath = sanitizePath(path) || ".";
+      return await runColeslaw(`(coleslaw:setup "${sanitizeLisp(safePath)}")`, safePath);
     },
   },
   {
@@ -95,7 +98,8 @@ export const tools = [
       },
     },
     execute: async ({ path }) => {
-      return await runColeslaw(`(coleslaw:main "${path || "."}")`, path);
+      const safePath = sanitizePath(path) || ".";
+      return await runColeslaw(`(coleslaw:main "${sanitizeLisp(safePath)}")`, safePath);
     },
   },
   {
@@ -109,8 +113,9 @@ export const tools = [
       },
     },
     execute: async ({ path, port }) => {
-      const p = port || 8080;
-      return await runColeslaw(`(coleslaw:preview :port ${p})`, path);
+      const safePath = sanitizePath(path);
+      const p = port && isValidPort(port) ? port : 8080;
+      return await runColeslaw(`(coleslaw:preview :port ${p})`, safePath);
     },
   },
   {
@@ -125,7 +130,8 @@ export const tools = [
       required: ["title"],
     },
     execute: async ({ path, title }) => {
-      return await runColeslaw(`(coleslaw:new-post "${title}")`, path);
+      const safePath = sanitizePath(path);
+      return await runColeslaw(`(coleslaw:new-post "${sanitizeLisp(title)}")`, safePath);
     },
   },
   {

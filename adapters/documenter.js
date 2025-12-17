@@ -6,6 +6,8 @@
  * https://documenter.juliadocs.org/
  */
 
+import { sanitizeJulia, isValidIdentifier, isValidPort, sanitizePath } from "./_security.js";
+
 export const name = "Documenter.jl";
 export const language = "Julia";
 export const description = "Documentation generator for Julia packages";
@@ -66,8 +68,9 @@ export const tools = [
       },
     },
     execute: async ({ path, sitename }) => {
-      const sn = sitename ? `sitename="${sitename}"` : "";
-      return await runJulia(`using Documenter; makedocs(${sn})`, path);
+      const safePath = sanitizePath(path);
+      const sn = sitename ? `sitename="${sanitizeJulia(sitename)}"` : "";
+      return await runJulia(`using Documenter; makedocs(${sn})`, safePath);
     },
   },
   {
@@ -81,8 +84,9 @@ export const tools = [
       },
     },
     execute: async ({ path, repo }) => {
-      const r = repo ? `repo="${repo}"` : "";
-      return await runJulia(`using Documenter; deploydocs(${r})`, path);
+      const safePath = sanitizePath(path);
+      const r = repo ? `repo="${sanitizeJulia(repo)}"` : "";
+      return await runJulia(`using Documenter; deploydocs(${r})`, safePath);
     },
   },
   {
@@ -97,7 +101,11 @@ export const tools = [
       required: ["module"],
     },
     execute: async ({ path, module }) => {
-      return await runJulia(`using Documenter, ${module}; doctest(${module})`, path);
+      if (!isValidIdentifier(module)) {
+        return { success: false, error: "Invalid module name" };
+      }
+      const safePath = sanitizePath(path);
+      return await runJulia(`using Documenter, ${module}; doctest(${module})`, safePath);
     },
   },
   {
@@ -111,8 +119,9 @@ export const tools = [
       },
     },
     execute: async ({ path, port }) => {
-      const p = port || 8000;
-      return await runJulia(`using LiveServer; serve(dir="docs/build", port=${p})`, path);
+      const safePath = sanitizePath(path);
+      const p = port && isValidPort(port) ? port : 8000;
+      return await runJulia(`using LiveServer; serve(dir="docs/build", port=${p})`, safePath);
     },
   },
   {
