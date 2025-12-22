@@ -8,53 +8,58 @@
   #:export (metadata current-position roadmap session-history state-summary))
 
 (define metadata
-  '((version . "0.3.0")
-    (updated . "2025-12-22")
-    (project . "pharos-ssg")
-    (codename . "NoteG")))
+  '((version . "0.2.0") (updated . "2025-12-17") (project . "pharos-ssg")))
 
 (define current-position
-  '((phase . "v0.3 - Full Implementation")
-    (overall-completion . 100)
-    (components-complete . "44/44")
-
-    (component-status
-     ((core-engine . "complete")
-      (build-system . "complete")
-      (ssg-components . "complete")
-      (language-tooling . "complete")
-      (accessibility . "complete")
-      (testing . "complete")
-      (documentation . "complete")
-      (scm-files . "complete")
-      (adapters . "complete")))))
+  '((phase . "v0.2 - Core Implementation")
+    (overall-completion . 40)
+    (components
+      ((rsr-compliance ((status . "complete") (completion . 100)))
+       (scm-configuration ((status . "complete") (completion . 100)))
+       (security-policy ((status . "complete") (completion . 100)))
+       (adapters ((status . "complete") (completion . 100) (count . 28)))
+       (testing ((status . "pending") (completion . 0)))
+       (documentation ((status . "in-progress") (completion . 30)))))))
 
 (define blockers-and-issues
   '((critical . ())
     (high-priority . ())
     (medium-priority . (("SPARK verification" . "Needs GNAT/SPARK toolchain")))))
 
+(define critical-next-actions
+  '((immediate
+      (("Add adapter tests" . high)
+       ("Create integration tests" . high)))
+    (this-week
+      (("Add CI/CD pipeline for tests" . medium)
+       ("Expand documentation" . medium)))))
+
 (define roadmap
-  '((v0.1 (status . "complete") (title . "Initial Setup"))
-    (v0.2 (status . "complete") (title . "Security Hardening"))
-    (v0.3 (status . "complete") (title . "Full Implementation")
-          (items . ("Ada/SPARK engine" "ReScript SSG" "NoteG language" "Accessibility" "CI/CD" "Documentation")))
-    (v0.4 (status . "pending") (title . "Testing & Verification"))
-    (v0.5 (status . "pending") (title . "Editor Integration"))
-    (v1.0 (status . "pending") (title . "Stable Release"))))
+  '((v0.1 (title . "Initial Setup")
+          (status . "complete")
+          (items . ("RSR compliance" "SCM files" "Security policy" "Adapter sync")))
+    (v0.2 (title . "Core Implementation")
+          (status . "in-progress")
+          (items . ("Security hardening" "Adapter validation" "Basic documentation")))
+    (v0.3 (title . "Testing & Quality")
+          (status . "pending")
+          (items . ("Unit tests" "Integration tests" "70% coverage" "CI pipeline")))
+    (v0.4 (title . "Documentation & Polish")
+          (status . "pending")
+          (items . ("API documentation" "Usage examples" "Contributing guide update")))
+    (v1.0 (title . "Stable Release")
+          (status . "pending")
+          (items . ("Full test coverage" "Performance optimization" "Release automation")))))
 
 (define session-history
   '((snapshots
-     ((date . "2025-12-15") (session . "initial"))
-     ((date . "2025-12-16") (session . "integration"))
-     ((date . "2025-12-17") (session . "security-review"))
-     ((date . "2025-12-22") (session . "full-implementation")
-      (notes . "44/44 components complete")))))
+      ((date . "2025-12-15") (session . "initial") (notes . "SCM files added"))
+      ((date . "2025-12-16") (session . "integration") (notes . "poly-ssg-mcp integration"))
+      ((date . "2025-12-17") (session . "security-review") (notes . "Security audit, SCM fixes, roadmap update")))))
 
 (define state-summary
-  '((project . "pharos-ssg / NoteG SSG")
-    (completion . "100%")
-    (components . "44/44")
+  '((project . "pharos-ssg")
+    (completion . 40)
     (blockers . 0)
-    (updated . "2025-12-22")
-    (next-milestone . "v0.4 - Testing & Verification")))
+    (updated . "2025-12-17")
+    (next-milestone . "v0.3 - Testing & Quality")))
