@@ -1,3 +1,4 @@
+;;; META.scm — pharos-ssg
 ;; SPDX-License-Identifier: AGPL-3.0-or-later
 ;; SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell
 ;;; META.scm — pharos-ssg
@@ -28,4 +29,17 @@
     (versioning (scheme . "SemVer 2.0.0"))))
 
 (define design-rationale
-  '((why-rsr "RSR ensures consistency, security, and maintainability.")))
+  '((why-mill-synthesis . "Deterministic, auditable, SPARK-verifiable builds")
+    (why-ada-spark . "Formal verification for safety-critical code")
+    (why-rescript . "Strong typing with JavaScript interop")
+    (why-accessibility-first . "No user should be excluded from content")
+    (why-rsr . "Consistency, security, and maintainability")))
+
+(define component-matrix
+  '((total-components . 44)
+    (complete . 44)
+    (categories
+     (("Core Engine" . 4) ("Build System" . 4) ("Site Generation" . 4)
+      ("Adapters" . 3) ("Accessibility" . 5) ("Testing" . 4)
+      ("Documentation" . 8) ("Configuration" . 3) ("Language Tooling" . 6)
+      ("Examples" . 3)))))

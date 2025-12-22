@@ -1,6 +1,11 @@
 ;;; STATE.scm — pharos-ssg
 ;; SPDX-License-Identifier: AGPL-3.0-or-later
-;; SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell
+;; SPDX-FileCopyrightText: 2025 hyperpolymath
+;;
+;; NoteG SSG - Project State and Progress Tracking
+
+(define-module (pharos-ssg state)
+  #:export (metadata current-position roadmap session-history state-summary))
 
 (define metadata
   '((version . "0.2.0") (updated . "2025-12-17") (project . "pharos-ssg")))
@@ -16,7 +21,10 @@
        (testing ((status . "pending") (completion . 0)))
        (documentation ((status . "in-progress") (completion . 30)))))))
 
-(define blockers-and-issues '((critical ()) (high-priority ())))
+(define blockers-and-issues
+  '((critical . ())
+    (high-priority . ())
+    (medium-priority . (("SPARK verification" . "Needs GNAT/SPARK toolchain")))))
 
 (define critical-next-actions
   '((immediate
