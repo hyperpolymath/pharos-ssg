@@ -1,0 +1,180 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2025 hyperpolymath
+#
+# NoteG SSG - Mustfile
+# Required invariants and constraints that MUST hold
+
+# ============================================================================
+# INVARIANTS - These must ALWAYS be true
+# ============================================================================
+
+[invariant.no-secrets]
+description = "No secrets in repository"
+check = """
+! grep -rE '(password|secret|api_key|private_key)\\s*=' --include='*.json' --include='*.env' . 2>/dev/null | grep -v '.example'
+"""
+severity = "critical"
+
+[invariant.spdx-headers]
+description = "All source files have SPDX headers"
+check = """
+find . -name '*.res' -o -name '*.ads' -o -name '*.adb' -o -name '*.js' | \
+  xargs -I{} head -5 {} | grep -q 'SPDX-License-Identifier'
+"""
+severity = "high"
+
+[invariant.no-eval]
+description = "No eval() in JavaScript/TypeScript"
+check = """
+! grep -rE '\\beval\\s*\\(' --include='*.js' --include='*.ts' --include='*.mjs' . 2>/dev/null
+"""
+severity = "critical"
+
+[invariant.no-shell-injection]
+description = "No unsanitized shell commands"
+check = """
+! grep -rE 'exec\\(.*\\$|spawn\\(.*\\$|system\\(.*\\$' --include='*.js' --include='*.res' . 2>/dev/null
+"""
+severity = "critical"
+
+[invariant.spark-verified]
+description = "SPARK code passes verification"
+check = "cd engine && gnatprove -P noteg_engine.gpr --level=0 --report=all"
+severity = "high"
+
+[invariant.tests-pass]
+description = "All tests must pass"
+check = "just test"
+severity = "critical"
+
+[invariant.no-unwrap]
+description = "No unsafe unwrap in ReScript"
+check = """
+! grep -rE '->Belt\\.Option\\.getExn|->Belt\\.Result\\.getExn' --include='*.res' . 2>/dev/null
+"""
+severity = "high"
+
+[invariant.accessibility-valid]
+description = "Accessibility schemas are valid"
+check = "deno run --allow-read a11y/validate.ts"
+severity = "high"
+
+# ============================================================================
+# CONSTRAINTS - Conditions that must be met
+# ============================================================================
+
+[constraint.coverage]
+description = "Test coverage >= 70%"
+check = "just test-coverage | grep -E '^[0-9]+%' | awk '{if ($1 < 70) exit 1}'"
+target = "70%"
+
+[constraint.bundle-size]
+description = "Bundle size <= 500KB"
+check = "du -sb public/*.js | awk '{if ($1 > 512000) exit 1}'"
+target = "500KB"
+
+[constraint.build-time]
+description = "Build time <= 60s"
+check = "time just build 2>&1 | grep real | awk '{if ($2 > 60) exit 1}'"
+target = "60s"
+
+[constraint.ada-warnings]
+description = "No Ada compiler warnings"
+check = "cd engine && gprbuild -P noteg_engine.gpr 2>&1 | grep -c warning | xargs test 0 -eq"
+target = "0 warnings"
+
+# ============================================================================
+# REQUIREMENTS - Features that must exist
+# ============================================================================
+
+[requirement.a11y-bsl]
+description = "BSL accessibility support"
+files = ["a11y/schema.json", "ssg/src/Types.res"]
+check = "grep -q 'bsl' a11y/schema.json"
+
+[requirement.a11y-gsl]
+description = "GSL accessibility support"
+files = ["a11y/schema.json", "ssg/src/Types.res"]
+check = "grep -q 'gsl' a11y/schema.json"
+
+[requirement.a11y-asl]
+description = "ASL accessibility support"
+files = ["a11y/schema.json", "ssg/src/Types.res"]
+check = "grep -q 'asl' a11y/schema.json"
+
+[requirement.a11y-makaton]
+description = "Makaton accessibility support"
+files = ["a11y/schema.json", "ssg/src/Types.res"]
+check = "grep -q 'makaton' a11y/schema.json"
+
+[requirement.mill-synthesis]
+description = "Mill-based synthesis engine"
+files = ["engine/src/noteg_engine.ads", "ssg/src/Build.res"]
+check = "grep -q 'Operation_Card' engine/src/noteg_engine.ads"
+
+[requirement.template-engine]
+description = "Template variable substitution"
+files = ["ssg/src/Build.res"]
+check = "grep -q 'Substitute_Variables\\|substitute' ssg/src/Build.res"
+
+[requirement.language-lexer]
+description = "NoteG language lexer"
+files = ["noteg-lang/src/Lexer.res"]
+check = "test -f noteg-lang/src/Lexer.res"
+
+[requirement.language-parser]
+description = "NoteG language parser"
+files = ["noteg-lang/src/Parser.res"]
+check = "test -f noteg-lang/src/Parser.res"
+
+[requirement.language-compiler]
+description = "NoteG language compiler"
+files = ["noteg-lang/src/Compiler.res"]
+check = "test -f noteg-lang/src/Compiler.res"
+
+[requirement.language-lsp]
+description = "NoteG language server"
+files = ["noteg-lang/src/lsp/"]
+check = "test -d noteg-lang/src/lsp"
+
+# ============================================================================
+# PRE-COMMIT HOOKS
+# ============================================================================
+
+[hook.pre-commit]
+description = "Pre-commit checks"
+commands = [
+  "just fmt",
+  "just lint",
+  "just typecheck",
+  "just test-unit"
+]
+
+[hook.pre-push]
+description = "Pre-push checks"
+commands = [
+  "just test-all",
+  "just audit"
+]
+
+# ============================================================================
+# CI/CD GATES
+# ============================================================================
+
+[gate.merge]
+description = "Requirements for merging PRs"
+checks = [
+  "invariant.no-secrets",
+  "invariant.spdx-headers",
+  "invariant.no-eval",
+  "invariant.tests-pass",
+  "constraint.coverage"
+]
+
+[gate.release]
+description = "Requirements for release"
+checks = [
+  "invariant.*",
+  "constraint.*",
+  "requirement.*"
+]

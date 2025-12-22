@@ -1,0 +1,681 @@
+= NoteG SSG Cookbook
+:author: hyperpolymath
+:revdate: 2025-12-17
+:toc: left
+:toclevels: 4
+:icons: font
+:source-highlighter: rouge
+:experimental:
+
+This cookbook provides recipes for common tasks, CLI combinations, Justfile commands, and Nickel configurations.
+
+== CLI Reference
+
+=== <<cli-build,Build Commands>>
+=== <<cli-test,Test Commands>>
+=== <<cli-lang,Language Commands>>
+=== <<cli-dev,Development Commands>>
+=== <<cli-container,Container Commands>>
+
+== Nickel Formulas
+
+=== <<nickel-config,Configuration Schemas>>
+=== <<nickel-validation,Validation Rules>>
+=== <<nickel-generation,Code Generation>>
+
+== Just Recipes
+
+=== <<just-basic,Basic Recipes>>
+=== <<just-composed,Composed Recipes>>
+=== <<just-advanced,Advanced Patterns>>
+
+'''
+
+[[cli-build]]
+== CLI Build Commands
+
+=== Full Build Pipeline
+
+[source,bash]
+----
+# Complete build with verification
+just build && just test && just audit
+----
+
+=== Incremental Build
+
+[source,bash]
+----
+# Build only changed components
+just build-ssg  # ReScript SSG only
+just build-lang # Language only
+just build-engine # Ada engine only
+----
+
+=== SPARK Verification Build
+
+[source,bash]
+----
+# Build with formal verification
+just build-spark
+
+# Or manually:
+cd engine && gnatprove -P noteg_engine.gpr --level=2
+----
+
+=== Release Build
+
+[source,bash]
+----
+# Optimized release build
+MODE=release just build-engine
+cd ssg && npm run build:prod
+----
+
+[[cli-test]]
+== CLI Test Commands
+
+=== Unit Tests
+
+[source,bash]
+----
+# Run all unit tests
+just test-unit
+
+# Run with coverage
+just test-unit 2>&1 | tee coverage.log
+----
+
+=== Integration Tests
+
+[source,bash]
+----
+# Integration tests
+just test-integration
+
+# Verbose output
+deno test --allow-read --allow-write tests/integration/ -- --verbose
+----
+
+=== E2E Tests
+
+[source,bash]
+----
+# Full e2e suite
+just test-e2e
+
+# Specific test file
+deno test --allow-all tests/e2e/build_test.ts
+----
+
+=== Bernoulli Verification
+
+[source,bash]
+----
+# Statistical verification with 1000 trials
+just test-bernoulli 1000
+
+# High confidence (10000 trials)
+just test-bernoulli 10000
+----
+
+=== Combined Test Patterns
+
+[source,bash]
+----
+# Quick check (unit only)
+just test-unit
+
+# Standard CI (unit + integration)
+just test
+
+# Full verification (all tests)
+just test-all
+
+# Pre-release (with bernoulli)
+just test-all && just test-bernoulli 5000
+----
+
+[[cli-lang]]
+== CLI Language Commands
+
+=== Compilation
+
+[source,bash]
+----
+# Compile to JavaScript
+just compile myfile.noteg
+
+# Compile with source maps
+just compile myfile.noteg --sourcemap
+
+# Compile to module format
+cd noteg-lang && node src/cli.mjs compile --module myfile.noteg
+----
+
+=== Execution
+
+[source,bash]
+----
+# Run directly
+just run myfile.noteg
+
+# Run with debug output
+NOTEG_DEBUG=true just run myfile.noteg
+----
+
+=== Checking
+
+[source,bash]
+----
+# Syntax check
+just check myfile.noteg
+
+# Full lint check
+cd noteg-lang && node src/cli.mjs check --strict myfile.noteg
+----
+
+=== Language Server
+
+[source,bash]
+----
+# Start LSP
+just lsp
+
+# Debug mode LSP
+just lsp-debug
+
+# With specific port
+cd noteg-lang && node src/lsp/server.mjs --port 6008
+----
+
+[[cli-dev]]
+== CLI Development Commands
+
+=== Formatting
+
+[source,bash]
+----
+# Format all code
+just fmt
+
+# Format specific directories
+cd ssg && npx rescript format -all
+deno fmt adapters/
+----
+
+=== Linting
+
+[source,bash]
+----
+# Lint all code
+just lint
+
+# Strict lint
+deno lint --rules-exclude=no-explicit-any adapters/
+----
+
+=== Type Checking
+
+[source,bash]
+----
+# Type check all
+just typecheck
+
+# Continuous type check
+cd ssg && npx rescript build -w
+----
+
+=== Watch Mode
+
+[source,bash]
+----
+# Watch and rebuild
+just watch
+
+# Watch specific directory
+watchexec -e res,md,json -w ssg/src just build-ssg
+----
+
+=== Dependency Management
+
+[source,bash]
+----
+# Install all deps
+just deps
+
+# Check for updates
+just check-deps
+
+# Security audit
+just audit
+----
+
+[[cli-container]]
+== CLI Container Commands
+
+=== Build
+
+[source,bash]
+----
+# Build container
+just container-build
+
+# With specific tag
+podman build -t noteg-ssg:v0.1.0 .
+
+# Multi-arch build
+podman build --platform linux/amd64,linux/arm64 -t noteg-ssg:latest .
+----
+
+=== Run
+
+[source,bash]
+----
+# Run container
+just container-run
+
+# With mounted volumes
+podman run --rm -it \
+  -v $(pwd)/content:/app/content:ro \
+  -v $(pwd)/public:/app/public \
+  noteg-ssg:latest build
+
+# Development mode
+podman run --rm -it \
+  -v $(pwd):/app:rw \
+  -p 8080:8080 \
+  noteg-ssg:latest serve
+----
+
+'''
+
+[[nickel-config]]
+== Nickel Configuration Schemas
+
+=== Site Configuration Schema
+
+[source,nickel]
+----
+# config.ncl - Site configuration schema
+let SiteConfig = {
+  name | String,
+  baseUrl | String | std.string.Url,
+  language | String | default = "en",
+  outputDir | String | default = "public",
+  contentDir | String | default = "content",
+  templateDir | String | default = "templates",
+  theme | String | optional,
+  plugins | Array String | default = [],
+  a11y | A11yConfig | optional,
+}
+
+let A11yConfig = {
+  enableBsl | Bool | default = false,
+  enableGsl | Bool | default = false,
+  enableAsl | Bool | default = false,
+  enableMakaton | Bool | default = false,
+  wcagLevel | [| 'A, 'AA, 'AAA |] | default = 'AA,
+}
+
+{
+  # Example configuration
+  config = {
+    name = "My NoteG Site",
+    baseUrl = "https://example.com",
+    language = "en",
+    a11y = {
+      enableBsl = true,
+      wcagLevel = 'AA,
+    },
+  } | SiteConfig
+}
+----
+
+=== Accessibility Schema
+
+[source,nickel]
+----
+# a11y.ncl - Accessibility metadata schema
+let BslData = {
+  videoUrl | String | std.string.Url | optional,
+  glosses | Array String | optional,
+  interpreter | String | optional,
+  dialect | [| 'standard, 'scottish, 'welsh, 'northern-ireland |] | default = 'standard,
+}
+
+let AslData = {
+  videoUrl | String | std.string.Url | optional,
+  glosses | Array String | optional,
+  interpreter | String | optional,
+  regional | [| 'standard, 'black-asl, 'tactile |] | default = 'standard,
+}
+
+let MakatonSymbol = {
+  id | String,
+  meaning | String,
+  imageUrl | String | optional,
+  stage | [| 'stage1, 'stage2, 'stage3, 'stage4, 'additional |] | optional,
+}
+
+let A11yMetadata = {
+  bsl | BslData | optional,
+  gsl | GslData | optional,
+  asl | AslData | optional,
+  makaton | MakatonData | optional,
+  altText | String | optional,
+  readingLevel | [| 'easy-read, 'simple, 'standard, 'technical, 'academic |] | optional,
+}
+----
+
+[[nickel-validation]]
+== Nickel Validation Rules
+
+=== Invariant Checks
+
+[source,nickel]
+----
+# invariants.ncl - Build invariants
+let Invariants = {
+  # No secrets in config
+  noSecrets = fun config =>
+    let hasSecret = std.string.contains "password" (std.serialize.Json config)
+      || std.string.contains "api_key" (std.serialize.Json config)
+    in
+    if hasSecret then
+      std.fail "Configuration contains potential secrets"
+    else
+      config,
+
+  # WCAG level must be set for a11y-enabled sites
+  wcagRequired = fun config =>
+    if config.a11y.enableBsl || config.a11y.enableAsl then
+      if config.a11y.wcagLevel == null then
+        std.fail "WCAG level required when accessibility is enabled"
+      else
+        config
+    else
+      config,
+
+  # URL must be HTTPS in production
+  httpsRequired = fun config =>
+    if std.string.starts_with "http://" config.baseUrl then
+      std.fail "Production sites must use HTTPS"
+    else
+      config,
+}
+
+# Apply all invariants
+let validate = fun config =>
+  config
+  |> Invariants.noSecrets
+  |> Invariants.wcagRequired
+  |> Invariants.httpsRequired
+----
+
+[[nickel-generation]]
+== Nickel Code Generation
+
+=== Template Generation
+
+[source,nickel]
+----
+# generate.ncl - Template generation
+let generateHtml = fun page =>
+  let title = page.frontmatter.title in
+  let content = page.body in
+  m%"
+<!DOCTYPE html>
+<html lang="${page.language}">
+<head>
+  <meta charset="UTF-8">
+  <title>${title}</title>
+  ${if page.a11y.bsl != null then
+    m%"<link rel="alternate" type="video/mp4" href="${page.a11y.bsl.videoUrl}">"m%
+    else ""}
+</head>
+<body>
+  <main>
+    ${content}
+  </main>
+</body>
+</html>
+"m%
+----
+
+'''
+
+[[just-basic]]
+== Just Basic Recipes
+
+=== Recipe Categories
+
+[source,just]
+----
+# List all recipes
+just --list
+
+# Show recipe details
+just --show build
+
+# Dry run
+just --dry-run build
+----
+
+=== Environment Variables
+
+[source,just]
+----
+# Set variables
+just --set project "my-project" build
+
+# Using .env
+just --dotenv-load build
+
+# Override
+MODE=release just build-engine
+----
+
+[[just-composed]]
+== Just Composed Recipes
+
+=== Build + Test
+
+[source,just]
+----
+# Recipe composition
+ci: build test audit
+    @echo "CI complete"
+
+# With dependencies
+release: ci docs
+    @echo "Release ready"
+----
+
+=== Conditional Recipes
+
+[source,just]
+----
+# Platform-specific
+build-platform:
+    @if [[ "$(uname)" == "Darwin" ]]; then \
+        echo "macOS build"; \
+    elif [[ "$(uname)" == "Linux" ]]; then \
+        echo "Linux build"; \
+    fi
+----
+
+=== Parameterized Recipes
+
+[source,just]
+----
+# With defaults
+serve port="8080":
+    cd public && python3 -m http.server {{port}}
+
+# Multiple params
+deploy env="staging" tag="latest":
+    @echo "Deploying {{tag}} to {{env}}"
+    podman push noteg-ssg:{{tag}} registry/noteg-ssg:{{env}}
+----
+
+[[just-advanced]]
+== Just Advanced Patterns
+
+=== Error Handling
+
+[source,just]
+----
+# Fail fast
+safe-build:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    just build
+    just test
+
+# Continue on error
+lenient-audit:
+    -just audit
+    @echo "Audit complete (may have warnings)"
+----
+
+=== Parallel Execution
+
+[source,just]
+----
+# Run in parallel (requires GNU parallel)
+parallel-test:
+    parallel ::: \
+        "just test-unit" \
+        "just test-integration" \
+        "just test-e2e"
+----
+
+=== Watch Patterns
+
+[source,just]
+----
+# Watch with specific extensions
+watch-build:
+    watchexec -e res,md,json,noteg -w ssg -w noteg-lang just build
+
+# With debounce
+watch-test:
+    watchexec --debounce 1000 -e res just test-unit
+----
+
+=== Integration with CI
+
+[source,just]
+----
+# GitHub Actions compatible
+ci-build:
+    @echo "::group::Build"
+    just build
+    @echo "::endgroup::"
+
+    @echo "::group::Test"
+    just test
+    @echo "::endgroup::"
+
+ci-report:
+    @echo "::set-output name=status::success"
+----
+
+'''
+
+== CLI Permutations Quick Reference
+
+=== Build Variants
+
+[cols="2,3"]
+|===
+|Command |Description
+
+|`just build`
+|Full build
+
+|`just build-engine`
+|Ada engine only
+
+|`just build-ssg`
+|ReScript SSG only
+
+|`just build-lang`
+|Language tools only
+
+|`just build-spark`
+|With SPARK verification
+|===
+
+=== Test Variants
+
+[cols="2,3"]
+|===
+|Command |Description
+
+|`just test`
+|Unit + Integration
+
+|`just test-unit`
+|Unit tests only
+
+|`just test-e2e`
+|E2E tests only
+
+|`just test-all`
+|All tests
+
+|`just test-bernoulli 1000`
+|Statistical verification
+|===
+
+=== Language Commands
+
+[cols="2,3"]
+|===
+|Command |Description
+
+|`just compile file.noteg`
+|Compile to JS
+
+|`just run file.noteg`
+|Execute directly
+
+|`just check file.noteg`
+|Syntax check
+
+|`just lsp`
+|Start language server
+|===
+
+=== Development
+
+[cols="2,3"]
+|===
+|Command |Description
+
+|`just fmt`
+|Format code
+
+|`just lint`
+|Lint code
+
+|`just typecheck`
+|Type check
+
+|`just watch`
+|Watch mode
+
+|`just deps`
+|Install dependencies
+
+|`just audit`
+|Security audit
+|===
+
+== License
+
+SPDX-License-Identifier: AGPL-3.0-or-later
+
+Copyright 2025 hyperpolymath
